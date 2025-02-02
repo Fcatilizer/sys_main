@@ -161,6 +161,8 @@ def check_distro_and_update(_):
         elif 'ubuntu' in distro_name or 'debian' in distro_name:
             subprocess.run(["sudo", "apt", "update"], input=sudo_password + "\n", text=True, check=True)
             subprocess.run(["sudo", "apt", "upgrade", "-y"], input=sudo_password + "\n", text=True, check=True)
+        elif 'fedora' in distro_name:
+            subprocess.run(["sudo", "dnf", "update", "-y"], input=sudo_password + "\n", text=True, check=True)
         else:
             messageZen("Error", f"Unsupported distribution: {distro_name}")
             return
