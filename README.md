@@ -10,10 +10,11 @@ My objective is to provide a simple and easy to use GUI for system maintainence 
 
 - [x] Battery Status
 - [x] Change Power Profiles (Only for laptops)
-- [ ] Update and Upgrade system packages (Not built yet)
+- [ ] Update and Upgrade system packages (In progress)
 - [ ] Clean system cache (Not built yet)
 - [ ] Remove unnecessary files (Not built yet)
 - [ ] Provide a GUI for easy access (Not built yet)
+- [ ] Provide a settings page for different laptops vendors example asusctl for Asus Laptops (Not built yet)
 
 > Note: This project is still under development and some features may not work as expected. I'll be adding more features in the future. I'm also open to contributions.
 

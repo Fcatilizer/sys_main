@@ -2,6 +2,7 @@ import gi
 import psutil
 import os
 import subprocess
+import platform
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib
 
 gi.require_version('Gtk', '4.0')
@@ -38,31 +39,30 @@ def get_active_power_profile():
         print(f"Failed to get active power profile: {e}")
         return None
 
-def on_activate(app):
+def check_distro_and_update():
+    distro = platform.linux_distribution()[0].lower()
+    if 'arch' in distro or 'manjaro' in distro:
+        try:
+            subprocess.run(["sudo", "pacman", "-Syu"], check=True)
+            subprocess.run(["yay", "-Syu"], check=True)
+            subprocess.run(["paru", "-Syu"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to update system: {e}")
+    elif 'ubuntu' in distro or 'debian' in distro:
+        try:
+            subprocess.run(["sudo", "apt", "update"], check=True)
+            subprocess.run(["sudo", "apt", "upgrade", "-y"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to update system: {e}")
+    else:
+        print(f"Unsupported distribution: {distro}")
+
+def create_main_page():
     battery = psutil.sensors_battery()
     battery_percentage = int(battery.percent) if battery else None
     battery_health = "Good"
     is_charging = battery.power_plugged if battery else False
 
-    win = Gtk.ApplicationWindow(application=app)
-    win.set_title("System Maintenance")
-    win.set_default_size(400, 600)
-    print("Current working directory:", os.getcwd())
-
-    try:
-        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
-        icon_info = icon_theme.lookup_icon("icon.png", 48, 1, Gtk.TextDirection.NONE, Gtk.IconLookupFlags.GENERIC_FALLBACK)
-        if (icon_info):
-            icon = GdkPixbuf.Pixbuf.new_from_file(icon_info.get_filename())
-            gicon = Gio.Icon.new_for_string(icon_info.get_filename())
-            image = Gtk.Image.new_from_gicon(gicon, Gtk.IconSize.DIALOG)
-            win.set_icon(icon)
-        else:
-            print("Icon not found")
-    except Exception as e:
-        print(f"Error setting icon: {e}")
-
-    # Battery Status
     column_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=30)
     row_box.set_halign(Gtk.Align.CENTER)
@@ -115,6 +115,7 @@ def on_activate(app):
         button.set_margin_bottom(10)
         button.set_margin_start(10)
         button.set_margin_end(10)
+        button.set_size_request(100, 30)  # Set button size
         button.connect("clicked", lambda btn, p=profile: change_power_profile(p, buttons))
         buttons.append(button)
         power_profile_buttons.append(button)
@@ -138,7 +139,6 @@ def on_activate(app):
     subheader_label.set_margin_bottom(2)
     column_box.append(subheader_label)
 
-
     # Add a 3x2 grid with buttons
     grid = Gtk.Grid()
     grid.set_column_spacing(50)  # Increase column spacing
@@ -152,6 +152,8 @@ def on_activate(app):
     button_texts = ["Clear Cache", "Clear Orphan file ⚠️", "Clear Swap file", "Kill All Process ", "Clear Session Management", "System Update"]
     for i, text in enumerate(button_texts):
         button = Gtk.Button(label=text)
+        if text == "System Update":
+            button.connect("clicked", lambda btn: check_distro_and_update())
         grid.attach(button, i % 2, i // 2, 1, 1)
 
     column_box.append(grid)
@@ -162,7 +164,64 @@ def on_activate(app):
     footer_label.set_margin_top(10)
     column_box.append(footer_label)
 
-    win.set_child(column_box)
+    return column_box, percentage_label, health_label
+
+def create_second_page():
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+    asusctl_status_label = Gtk.Label()
+    asusctl_status_label.set_halign(Gtk.Align.START)
+    asusctl_status_label.set_margin_top(10)
+    asusctl_status_label.set_margin_bottom(10)
+    asusctl_status_label.set_margin_start(20)
+    try:
+        subprocess.run(["asusctl", "--version"], check=True, capture_output=True, text=True)
+        asusctl_status_label.set_text("✅ asusctl is installed")
+    except subprocess.CalledProcessError:
+        asusctl_status_label.set_text("❌ asusctl is not installed")
+    box.append(asusctl_status_label)
+    return box
+
+def on_activate(app):
+    win = Gtk.ApplicationWindow(application=app)
+    win.set_title("System Maintenance")
+    win.set_default_size(400, 600)
+    print("Current working directory:", os.getcwd())
+
+    try:
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        icon_info = icon_theme.lookup_icon("icon.png", 48, 1, Gtk.TextDirection.NONE, Gtk.IconLookupFlags.GENERIC_FALLBACK)
+        if (icon_info):
+            icon = GdkPixbuf.Pixbuf.new_from_file(icon_info.get_filename())
+            gicon = Gio.Icon.new_for_string(icon_info.get_filename())
+            image = Gtk.Image.new_from_gicon(gicon, Gtk.IconSize.DIALOG)
+            win.set_icon(icon)
+        else:
+            print("Icon not found")
+    except Exception as e:
+        print(f"Error setting icon: {e}")
+
+    stack = Gtk.Stack()
+    stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+    stack.set_transition_duration(1000)
+
+    main_page, percentage_label, health_label = create_main_page()
+    second_page = create_second_page()
+
+    stack.add_titled(main_page, "main", "Main Page")
+    stack.add_titled(second_page, "More", "Configure Page")
+
+    stack_switcher = Gtk.StackSwitcher()
+    stack_switcher.set_stack(stack)
+    stack_switcher.set_margin_start(10)
+    stack_switcher.set_margin_end(10)
+    stack_switcher.set_margin_top(10)
+    stack_switcher.set_margin_bottom(10)
+
+    vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+    vbox.append(stack)
+    vbox.append(stack_switcher)
+
+    win.set_child(vbox)
     win.present()
 
     # Update battery status every 5 seconds
