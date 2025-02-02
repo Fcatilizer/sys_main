@@ -344,6 +344,11 @@ def create_second_page():
     return box
 
 def on_activate(app):
+    if not prepare():
+        return
+
+    messageZen("Welcome", "Welcome to System Maintenance")
+    
     win = Gtk.ApplicationWindow(application=app)
     win.set_title("System Maintenance")
     win.set_default_size(400, 600)
