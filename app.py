@@ -131,7 +131,7 @@ def clearCache(_):
         return
 
     try:
-        subprocess.run(["sudo", "rm", "-rf", "/var/cache/pacman/pkg/"], input=sudo_password + "\n", text=True, check=True)
+        subprocess.run(["sudo", "-S", "rm", "-rf", "/var/cache/pacman/pkg/"], input=sudo_password + "\n", text=True, check=True)
     except subprocess.CalledProcessError as e:
         print(f"Failed to clear cache: {e}")
 
@@ -329,6 +329,15 @@ def create_second_page():
     grid.attach(free_memory_label, 1, 1, 1, 1)
 
     box.append(grid)
+
+    # Add horizontal separator
+    separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+    separator.set_margin_start(20)
+    separator.set_margin_end(20)
+    separator.set_margin_top(10)
+    separator.set_margin_bottom(10)
+    separator.set_size_request(-1, 8)  # Increase the height/thickness of the separator
+    box.append(separator)
 
 
 
