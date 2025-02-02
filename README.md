@@ -10,10 +10,10 @@ My objective is to provide a simple and easy to use GUI for system maintainence 
 
 - [x] Battery Status
 - [x] Change Power Profiles (Only for laptops)
-- [ ] Update and Upgrade system packages (In progress)
-- [ ] Clean system cache (Not built yet)
-- [ ] Remove unnecessary files (Not built yet)
-- [ ] Provide a GUI for easy access (Not built yet)
+- [x] Update and Upgrade system packages (In progress)
+- [x] Clean system cache (In progress)
+- [x] Remove unnecessary / orphan files (In progress)
+- [x] Provide a GUI for easy access (In progress)
 - [ ] Provide a settings page for different laptops vendors example asusctl for Asus Laptops (Not built yet)
 
 > Note: This project is still under development and some features may not work as expected. I'll be adding more features in the future. I'm also open to contributions.
@@ -35,7 +35,7 @@ cd sys_main
 3. Install the dependencies (for Arch Linux)
 
 ```bash
-sudo pacman -S python-psutil
+sudo pacman -S python-psutil zenity
 ```
 
 4. Run the script

@@ -7,6 +7,37 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib
 
 gi.require_version('Gtk', '4.0')
 
+
+def prepare():
+    if not isZenityInstalled():
+        messageZen("Warning", "Zenity is not installed and could not be installed.")
+        return False
+
+    try:
+        result = subprocess.run(["pgrep", "-x", "zenity"], capture_output=True, text=True)
+        if result.returncode == 0:
+            messageZen("Warning", "Zenity is already running.")
+            return False
+    except subprocess.CalledProcessError as e:
+        messageZen("Error", f"Failed to check if Zenity is running: {e}")
+        return False
+
+    return True
+
+def messageZen(title, message):
+    if prepare():
+        try:
+            subprocess.run(["zenity", "--info", "--title", title, "--text", message], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to show message: {e}")
+
+def errorZen(title, message):
+    if prepare():
+        try:
+            subprocess.run(["zenity", "--error", "--title", title, "--text", message], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to show error: {e}")
+
 def update_battery_status(percentage_label, health_label):
     battery = psutil.sensors_battery()
     battery_percentage = int(battery.percent) if battery else None
@@ -46,7 +77,7 @@ def isZenityInstalled():
     except subprocess.CalledProcessError:
         subprocess.run(["sudo", "apt", "install", "-y", "zenity"], check=True)
         return False
-    
+
 def sudoPasswordPrompt():
     if isZenityInstalled():
         try:
@@ -119,21 +150,23 @@ def check_distro_and_update(_):
     distro_name = distro.id().lower()  # Get the lowercase distribution ID
     sudo_password = sudoPasswordPrompt()
     if not sudo_password:
-        print("No sudo password provided")
+        messageZen("Error", "No sudo password provided")
         return
 
     try:
         if 'arch' in distro_name or 'manjaro' in distro_name:
-            subprocess.run(["sudo", "pacman", "-Syu"], input=sudo_password + "\n", text=True, check=True)
-            subprocess.run(["yay", "-Syu"], check=True)
-            subprocess.run(["paru", "-Syu"], check=True)
+            subprocess.run(["sudo", "pacman", "-Syu", "--noconfirm"], input=sudo_password + "\n", text=True, check=True)
+            subprocess.run(["yay", "-Syu", "--noconfirm"], check=True)
+            subprocess.run(["paru", "-Syu", "--noconfirm"], check=True)
         elif 'ubuntu' in distro_name or 'debian' in distro_name:
             subprocess.run(["sudo", "-S", "apt", "update"], input=sudo_password + "\n", text=True, check=True)
             subprocess.run(["sudo", "-S", "apt", "upgrade", "-y"], input=sudo_password + "\n", text=True, check=True)
         else:
-            print(f"Unsupported distribution: {distro_name}")
+            messageZen("Error", f"Unsupported distribution: {distro_name}")
+            return
+        messageZen("Success", "System update completed successfully.")
     except subprocess.CalledProcessError as e:
-        print(f"Failed to update system: {e}")
+        messageZen("Error", f"Failed to update system: {e}")
 
 def create_main_page():
     battery = psutil.sensors_battery()
