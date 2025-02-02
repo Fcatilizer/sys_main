@@ -18,7 +18,11 @@ My objective is to provide a simple and easy to use GUI for system maintainence 
 
 > Note: This project is still under development and some features may not work as expected. I'll be adding more features in the future. I'm also open to contributions.
 
-## Installation
+## Download the latest release
+
+Download it from the [releases](https://github.com/Fcatilizer/sys_main/releases) page.
+
+## Run the script?
 
 1. Clone the repository
 
