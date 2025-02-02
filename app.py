@@ -159,8 +159,8 @@ def check_distro_and_update(_):
             subprocess.run(["yay", "-Syu", "--noconfirm"], check=True)
             subprocess.run(["paru", "-Syu", "--noconfirm"], check=True)
         elif 'ubuntu' in distro_name or 'debian' in distro_name:
-            subprocess.run(["sudo", "-S", "apt", "update"], input=sudo_password + "\n", text=True, check=True)
-            subprocess.run(["sudo", "-S", "apt", "upgrade", "-y"], input=sudo_password + "\n", text=True, check=True)
+            subprocess.run(["sudo", "apt", "update"], input=sudo_password + "\n", text=True, check=True)
+            subprocess.run(["sudo", "apt", "upgrade", "-y"], input=sudo_password + "\n", text=True, check=True)
         else:
             messageZen("Error", f"Unsupported distribution: {distro_name}")
             return
@@ -178,7 +178,8 @@ def create_main_page():
     row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=30)
     row_box.set_halign(Gtk.Align.CENTER)
 
-    battery_icon = Gtk.Image.new_from_file("battery_icon.png")
+    battery_icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "battery_icon.png")
+    battery_icon = Gtk.Image.new_from_file(battery_icon_path)
     battery_icon.set_size_request(120, 120)
 
     charging_icon = "⚡" if is_charging else ""
