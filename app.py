@@ -8,7 +8,7 @@ gi.require_version('Gtk', '4.0')
 
 def update_battery_status(percentage_label, health_label):
     battery = psutil.sensors_battery()
-    battery_percentage = battery.percent if battery else None
+    battery_percentage = int(battery.percent) if battery else None
     battery_health = "Good"
     is_charging = battery.power_plugged if battery else False
 
@@ -40,7 +40,7 @@ def get_active_power_profile():
 
 def on_activate(app):
     battery = psutil.sensors_battery()
-    battery_percentage = battery.percent if battery else None
+    battery_percentage = int(battery.percent) if battery else None
     battery_health = "Good"
     is_charging = battery.power_plugged if battery else False
 
