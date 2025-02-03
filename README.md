@@ -24,8 +24,9 @@ My objective is to provide a simple and easy to use GUI for system maintainence 
 - [ ] The Keyboard backlight slider is not working properly. Permission issue.
 - [ ] The GPU and CPU fans info (Not sure how it's working)
 - [ ] The data fetched using fastfetch / neofetch isn't rendering properly. (Still Readable)
-- [ ] If compiled ./app isn't ran through terminal / shell, it causes issues with sudo permissions.
+- [ ] If compiled `./app` isn't ran through terminal / shell, it causes issues with sudo permissions.
 - [ ] Can't fix window icon issue. (Not a big deal but it's annoying. I'll fix it soon maybe)
+- [ ] Quick Toggles not working perfectly yet. (I'll fix it soon)
 
 ## Download the latest release
 
