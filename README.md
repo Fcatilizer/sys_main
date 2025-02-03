@@ -18,6 +18,15 @@ My objective is to provide a simple and easy to use GUI for system maintainence 
 
 > Note: This project is still under development and some features may not work as expected. I'll be adding more features in the future. I'm also open to contributions.
 
+## Known Issues
+
+- [ ] The Brightness slider is not working properly. Permission issue.
+- [ ] The Keyboard backlight slider is not working properly. Permission issue.
+- [ ] The GPU and CPU fans info (Not sure how it's working)
+- [ ] The data fetched using fastfetch / neofetch isn't rendering properly. (Still Readable)
+- [ ] If compiled ./app isn't ran through terminal / shell, it causes issues with sudo permissions.
+- [ ] Can't fix window icon issue. (Not a big deal but it's annoying. I'll fix it soon maybe)
+
 ## Download the latest release
 
 Download it from the [releases](https://github.com/Fcatilizer/sys_main/releases) page.
