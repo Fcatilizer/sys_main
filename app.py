@@ -81,8 +81,12 @@ def isZenityInstalled():
 def sudoPasswordPrompt():
     if isZenityInstalled():
         try:
-            result = subprocess.run(["zenity", "--password"], check=True, capture_output=True, text=True)
-            return result.stdout.strip()
+            result = subprocess.run("zenity --password | sudo -S echo 'Sudo password accepted.'", shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+            else:
+                print("Failed to get sudo password")
+                return None
         except subprocess.CalledProcessError as e:
             print(f"Failed to get sudo password: {e}")
             return None
@@ -240,6 +244,7 @@ def create_main_page():
     separator.set_size_request(-1, 8)  # Increase the height/thickness of the separator
     column_box.append(separator)
     
+    # Subheader
     subheader_label = Gtk.Label(label="Basic System Maintenance (In Progress)")
     subheader_label.set_halign(Gtk.Align.START)
     subheader_label.set_margin_start(20)
@@ -285,8 +290,124 @@ def create_main_page():
 
     return column_box, percentage_label, health_label
 
+
+def on_brightness_changed(slider):
+    value = int(slider.get_value())
+    try:
+        with open('/sys/class/backlight/intel_backlight/brightness', 'w') as f:
+            f.write(str(value))
+        print(f"Brightness changed to: {value}%")
+    except Exception as e:
+        print(f"Failed to change brightness: {e}")
+
+def on_volume_changed(slider):
+    value = int(slider.get_value())
+    try:
+        # Check if PipeWire is running
+        result = subprocess.run(["pactl", "info"], capture_output=True, text=True, check=True)
+        if "PipeWire" in result.stdout:
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{value}%"], check=True)
+        else:
+            subprocess.run(["amixer", "set", "Master", f"{value}%", "unmute"], check=True)
+        print(f"Volume changed to: {value}%")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to change volume: {e}")
+
+def get_current_volume():
+    try:
+        # Check if PipeWire is running
+        result = subprocess.run(["pactl", "info"], capture_output=True, text=True, check=True)
+        if "PipeWire" in result.stdout:
+            result = subprocess.run(["pactl", "get-sink-volume", "@DEFAULT_SINK@"], capture_output=True, text=True, check=True)
+            volume = int(result.stdout.split('/')[1].strip().replace('%', ''))
+        else:
+            result = subprocess.run(["amixer", "get", "Master"], capture_output=True, text=True, check=True)
+            volume = int(result.stdout.split('[')[1].split('%')[0])
+        return volume
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to get current volume: {e}")
+        return 50  # Default to 50% if there's an error
+
+def on_keyboard_brightness_changed(slider):
+    value = int(slider.get_value())
+    try:
+        with open('/sys/class/leds/asus::kbd_backlight/brightness', 'w') as f:
+            f.write(str(value))
+        print(f"Keyboard brightness changed to: {value}%")
+    except Exception as e:
+        print(f"Failed to change keyboard brightness: {e}")
+
+def on_microphone_changed(slider):
+    value = int(slider.get_value())
+    try:
+        # Check if PipeWire is running
+        result = subprocess.run(["pactl", "info"], capture_output=True, text=True, check=True)
+        if "PipeWire" in result.stdout:
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", f"{value}%"], check=True)
+        else:
+            subprocess.run(["amixer", "set", "Capture", f"{value}%", "unmute"], check=True)
+        print(f"Microphone volume changed to: {value}%")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to change microphone volume: {e}")
+
+def get_current_microphone_volume():
+    try:
+        # Check if PipeWire is running
+        result = subprocess.run(["pactl", "info"], capture_output=True, text=True, check=True)
+        if "PipeWire" in result.stdout:
+            result = subprocess.run(["pactl", "get-source-volume", "@DEFAULT_SOURCE@"], capture_output=True, text=True, check=True)
+            volume = int(result.stdout.split('/')[1].strip().replace('%', ''))
+        else:
+            result = subprocess.run(["amixer", "get", "Capture"], capture_output=True, text=True, check=True)
+            volume = int(result.stdout.split('[')[1].split('%')[0])
+        return volume
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to get current microphone volume: {e}")
+        return 50  # Default to 50% if there's an error
+
+def wifi_toggle(button):
+    try:
+        subprocess.run(["nmcli", "radio", "wifi", "on" if button.get_label() == "Wifi Off" else "off"], check=True)
+        button.set_label("Wifi Off" if button.get_label() == "Wifi On" else "Wifi On")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to toggle wifi: {e}")
+
+def bluetooth_toggle(button):
+    try:
+        subprocess.run(["bluetoothctl", "power", "on" if button.get_label() == "Bluetooth Off" else "off"], check=True)
+        button.set_label("Bluetooth Off" if button.get_label() == "Bluetooth On" else "Bluetooth On")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to toggle bluetooth: {e}")
+
+def airplane_toggle(button):
+    try:
+        subprocess.run(["nmcli", "radio", "all", "on" if button.get_label() == "Airplane Off" else "off"], check=True)
+        button.set_label("Airplane Off" if button.get_label() == "Airplane On" else "Airplane On")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to toggle airplane mode: {e}")
+
+def mic_toggle(button):
+    try:
+        # Check if PipeWire is running
+        result = subprocess.run(["pactl", "info"], capture_output=True, text=True, check=True)
+        if "PipeWire" in result.stdout:
+            subprocess.run(["pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle"], check=True)
+        else:
+            subprocess.run(["amixer", "set", "Capture", "toggle"], check=True)
+        button.set_label("Mic Off" if button.get_label() == "Mic On" else "Mic On")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to toggle microphone: {e}")
+
+
+
 def create_second_page():
+    scrolled_window = Gtk.ScrolledWindow()
+    scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+    scrolled_window.set_min_content_height(400)
+
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+    scrolled_window.set_child(box)
+
     asusctl_status_label = Gtk.Label()
     asusctl_status_label.set_halign(Gtk.Align.START)
     asusctl_status_label.set_margin_start(20)
@@ -331,6 +452,70 @@ def create_second_page():
     grid.attach(free_space_label, 0, 1, 1, 1)
     grid.attach(free_memory_label, 1, 1, 1, 1)
 
+    # Add horizontal separator
+    separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+    separator.set_margin_start(20)
+    separator.set_margin_end(20)
+    separator.set_margin_top(10)
+    separator.set_size_request(-1, 8)  # Increase the height/thickness of the separator
+    grid.attach(separator, 0, 2, 2, 1)
+
+    box.append(grid)
+
+    # Brightness Slider
+    brightness_label = Gtk.Label(label="Brightness (In progress)")
+    brightness_label.set_halign(Gtk.Align.START)
+    grid.attach(brightness_label, 0, 3, 1, 1)
+
+    brightness_adjustment = Gtk.Adjustment(value=50, lower=0, upper=100, step_increment=1, page_increment=10, page_size=0)
+    brightness_slider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=brightness_adjustment)
+    brightness_slider.set_digits(0)
+    brightness_slider.set_hexpand(True)
+    brightness_slider.set_valign(Gtk.Align.CENTER)
+    brightness_slider.connect("value-changed", on_brightness_changed)
+    grid.attach(brightness_slider, 1, 3, 1, 1)
+
+    # Keyboard Brightness Slider
+    keyboard_brightness_label = Gtk.Label(label="Keyboard Brightness(In progress)")
+    keyboard_brightness_label.set_halign(Gtk.Align.START)
+    grid.attach(keyboard_brightness_label, 0, 4, 1, 1)
+    
+    keyboard_brightness_adjustment = Gtk.Adjustment(value=50, lower=0, upper=100, step_increment=1, page_increment=10, page_size=0)
+    keyboard_brightness_slider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=keyboard_brightness_adjustment)
+    keyboard_brightness_slider.set_digits(0)
+    keyboard_brightness_slider.set_hexpand(True)
+    keyboard_brightness_slider.set_valign(Gtk.Align.CENTER)
+    keyboard_brightness_slider.connect("value-changed", on_keyboard_brightness_changed)
+    grid.attach(keyboard_brightness_slider, 1, 4, 1, 1)
+
+    # Volume Slider
+    volume_label = Gtk.Label(label="Volume")
+    volume_label.set_halign(Gtk.Align.START)
+    grid.attach(volume_label, 0, 5, 1, 1)
+    
+    current_volume = get_current_volume()
+    volume_adjustment = Gtk.Adjustment(value=current_volume, lower=0, upper=100, step_increment=1, page_increment=10, page_size=0)
+    volume_slider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=volume_adjustment)
+    volume_slider.set_digits(0)
+    volume_slider.set_hexpand(True)
+    volume_slider.set_valign(Gtk.Align.CENTER)
+    volume_slider.connect("value-changed", on_volume_changed)
+    grid.attach(volume_slider, 1, 5, 1, 1)
+
+    # Microphone Slider
+    microphone_label = Gtk.Label(label="Microphone (In progress)")
+    microphone_label.set_halign(Gtk.Align.START)
+    grid.attach(microphone_label, 0, 6, 1, 1)
+
+    current_microphone_volume = get_current_microphone_volume()
+    microphone_adjustment = Gtk.Adjustment(value=current_microphone_volume, lower=0, upper=100, step_increment=1, page_increment=10, page_size=0)
+    microphone_slider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=microphone_adjustment)
+    microphone_slider.set_digits(0)
+    microphone_slider.set_hexpand(True)
+    microphone_slider.set_valign(Gtk.Align.CENTER)
+    microphone_slider.connect("value-changed", on_microphone_changed)
+    grid.attach(microphone_slider, 1, 6, 1, 1)
+
     box.append(grid)
 
     # Add horizontal separator
@@ -342,9 +527,163 @@ def create_second_page():
     separator.set_size_request(-1, 8)  # Increase the height/thickness of the separator
     box.append(separator)
 
+    # Subheader
+    subheader_label = Gtk.Label(label="Quick Toggles (In Progress)")
+    subheader_label.set_halign(Gtk.Align.START)
+    subheader_label.set_margin_start(20)
+    subheader_label.set_margin_top(6)
+    subheader_label.set_margin_bottom(2)
+    box.append(subheader_label)
 
+    # Add a row of 5 square buttons with SVG icons
+    button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+    button_box.set_halign(Gtk.Align.CENTER)
+    
+    # Add SVG icons inside the buttons
+    svg_icons = ["wifi.svg", "bluetooth.svg", "airplane.svg", "mic.svg", "about.svg"]
+    button_functions = [wifi_toggle, bluetooth_toggle, airplane_toggle, mic_toggle, about_dialog]
+    button_labels = ["Wifi", "Bluetooth", "Airplane", "Mic", "About"]
 
-    return box
+    for icon_name, func, label in zip(svg_icons, button_functions, button_labels):
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        button = Gtk.Button()
+        button.set_size_request(50, 50)  # Set the size to make them square
+
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), icon_name)
+        icon = Gtk.Image.new_from_file(icon_path)
+        button.set_child(icon)
+        button.connect("clicked", func)
+
+        label_widget = Gtk.Label(label=label)
+        label_widget.set_halign(Gtk.Align.CENTER)
+
+        vbox.append(button)
+        vbox.append(label_widget)
+        button_box.append(vbox)
+
+    box.append(button_box)
+
+    # Add horizontal separator
+    separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+    separator.set_margin_start(20)
+    separator.set_margin_end(20)
+    separator.set_margin_top(10)
+    separator.set_margin_bottom(10)
+    separator.set_size_request(-1, 8)  # Increase the height/thickness of the separator
+    box.append(separator)
+
+    # Subheader
+    subheader_label = Gtk.Label(label="Fan and Temperature (In Progress)")
+    subheader_label.set_halign(Gtk.Align.START)
+    subheader_label.set_margin_start(20)
+    subheader_label.set_margin_top(6)
+    subheader_label.set_margin_bottom(2)
+    box.append(subheader_label)
+
+    # Fan and Temperature Grid
+    fan_temp_grid = Gtk.Grid()
+    fan_temp_grid.set_column_spacing(50)
+    fan_temp_grid.set_row_spacing(20)
+    fan_temp_grid.set_margin_start(20)
+    fan_temp_grid.set_margin_end(20)
+    fan_temp_grid.set_margin_top(10)
+    fan_temp_grid.set_margin_bottom(10)
+    fan_temp_grid.set_halign(Gtk.Align.CENTER)
+
+    # CPU Temperature
+    cpu_temp_label = Gtk.Label(label="CPU Temperature:")
+    cpu_temp_value = Gtk.Label(label="N/A")
+    fan_temp_grid.attach(cpu_temp_label, 0, 0, 1, 1)
+    fan_temp_grid.attach(cpu_temp_value, 1, 0, 1, 1)
+
+    # GPU Temperature
+    gpu_temp_label = Gtk.Label(label="GPU Temperature:")
+    gpu_temp_value = Gtk.Label(label="N/A")
+    fan_temp_grid.attach(gpu_temp_label, 0, 1, 1, 1)
+    fan_temp_grid.attach(gpu_temp_value, 1, 1, 1, 1)
+
+    # CPU Fan Speed
+    cpu_fan_label = Gtk.Label(label="CPU Fan Speed:")
+    cpu_fan_value = Gtk.Label(label="N/A")
+    fan_temp_grid.attach(cpu_fan_label, 0, 2, 1, 1)
+    fan_temp_grid.attach(cpu_fan_value, 1, 2, 1, 1)
+
+    # GPU Fan Speed
+    gpu_fan_label = Gtk.Label(label="GPU Fan Speed:")
+    gpu_fan_value = Gtk.Label(label="N/A")
+    fan_temp_grid.attach(gpu_fan_label, 0, 3, 1, 1)
+    fan_temp_grid.attach(gpu_fan_value, 1, 3, 1, 1)
+
+    box.append(fan_temp_grid)
+
+    def update_fan_temp():
+        try:
+            # Fetch CPU temperature using sensors
+            cpu_temp_result = subprocess.run(["sensors"], capture_output=True, text=True, check=True)
+            cpu_temp_lines = [line for line in cpu_temp_result.stdout.split('\n') if 'Core 0' in line]
+            if cpu_temp_lines:
+                cpu_temp = cpu_temp_lines[0].split()[2]
+                cpu_temp_value.set_text(cpu_temp)
+
+            # Fetch GPU temperature using sensors
+            gpu_temp_lines = [line for line in cpu_temp_result.stdout.split('\n') if 'temp1' in line]
+            if gpu_temp_lines:
+                gpu_temp = gpu_temp_lines[0].split()[1]
+                gpu_temp_value.set_text(gpu_temp)
+
+            # Fetch CPU fan speed using sensors
+            cpu_fan_result = subprocess.run(["sensors"], capture_output=True, text=True, check=True)
+            cpu_fan_lines = [line for line in cpu_fan_result.stdout.split('\n') if 'fan1' in line]
+            if cpu_fan_lines:
+                cpu_fan_speed = cpu_fan_lines[0].split()[1]
+                cpu_fan_value.set_text(f"{cpu_fan_speed} RPM")
+
+            # Fetch GPU fan speed using sensors
+            gpu_fan_lines = [line for line in cpu_fan_result.stdout.split('\n') if 'fan2' in line]
+            if gpu_fan_lines:
+                gpu_fan_speed = gpu_fan_lines[0].split()[1]
+                gpu_fan_value.set_text(f"{gpu_fan_speed} RPM")
+        except Exception as e:
+            print(f"Failed to update fan and temperature: {e}")
+
+        return True  # Continue calling this function
+
+    GLib.timeout_add_seconds(5, update_fan_temp)
+
+    
+    return scrolled_window
+
+def about_dialog(_):
+    try:
+        # Check if fastfetch is installed
+        subprocess.run(["fastfetch", "--version"], check=True, capture_output=True, text=True)
+        fetch_command = ["fastfetch"]
+    except subprocess.CalledProcessError:
+        try:
+            # Check if neofetch is installed
+            subprocess.run(["neofetch", "--version"], check=True, capture_output=True, text=True)
+            fetch_command = ["neofetch", "--stdout"]
+        except subprocess.CalledProcessError:
+            fetch_command = None
+
+    if fetch_command:
+        try:
+            result = subprocess.run(fetch_command, capture_output=True, text=True, check=True)
+            message = result.stdout
+        except subprocess.CalledProcessError as e:
+            message = f"Failed to fetch system information: {e}"
+    else:
+        distro_name = distro.name()
+        host_name = os.uname().nodename
+        user_name = os.getlogin()
+        cpu_info = subprocess.run(["lscpu"], capture_output=True, text=True).stdout.split('\n')[0]
+        memory_info = subprocess.run(["free", "-h"], capture_output=True, text=True).stdout.split('\n')[1]
+        message = f"Distro: {distro_name}\nHost: {host_name}\nUser: {user_name}\nCPU: {cpu_info}\nMemory: {memory_info}"
+
+    try:
+        subprocess.run(["zenity", "--info", "--title", "System Information", "--text", message, "--width=600", "--height=400"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to show system information: {e}")
 
 def on_activate(app):
     if not prepare():
