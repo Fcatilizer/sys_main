@@ -14,14 +14,16 @@ My objective is to provide a simple and easy to use GUI for system maintainence 
 - [x] Clean system cache (In progress)
 - [x] Remove unnecessary / orphan files (In progress)
 - [x] Provide a GUI for easy access (In progress)
+- [x] RGB controls for Keyboard (Not Working perfectly)
+- [ ] RGB and DPI controls for mouse (Not built yet)
 - [ ] Provide a settings page for different laptops vendors example asusctl for Asus Laptops (Not built yet)
 
 > Note: This project is still under development and some features may not work as expected. I'll be adding more features in the future. I'm also open to contributions.
 
 ## Known Issues
 
-- [ ] The Brightness slider is not working properly. Permission issue.
-- [ ] The Keyboard backlight slider is not working properly. Permission issue.
+- [ ] The Brightness slider is not working (Permission issue).
+- [ ] The Keyboard backlight slider is not working properly (Still Working).
 - [ ] The GPU and CPU fans info (Not sure how it's working)
 - [ ] The data fetched using fastfetch / neofetch isn't rendering properly. (Still Readable)
 - [ ] If compiled `./app` isn't ran through terminal / shell, it causes issues with sudo permissions.
